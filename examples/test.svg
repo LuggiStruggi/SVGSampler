@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.1-rc (832c77b156, 2025-02-28)"
+   sodipodi:docname="test.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="2.8614198"
+     inkscape:cx="-2.446338"
+     inkscape:cy="100.82408"
+     inkscape:window-width="1854"
+     inkscape:window-height="1011"
+     inkscape:window-x="66"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <ellipse
+       style="fill:#fff426;fill-opacity:1;stroke:none;stroke-width:0.213178;stroke-opacity:1"
+       id="path48"
+       cx="18.787157"
+       cy="13.037671"
+       rx="13.484677"
+       ry="13.037671" />
+    <ellipse
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.064114;stroke-opacity:1"
+       id="path44"
+       cx="12.898973"
+       cy="8.7380142"
+       rx="3.2825336"
+       ry="3.0808766" />
+    <ellipse
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.064114;stroke-opacity:1"
+       id="path44-1"
+       cx="23.271746"
+       cy="8.7380142"
+       rx="3.2825336"
+       ry="3.0808766" />
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583;stroke-opacity:1"
+       d="m 14.649465,14.979452 h 11.465753 c 0,0 1.913492,3.37064 -2.248802,6.195205 -3.596161,2.440383 -8.847089,2.40411 -9.03202,-1.202054 -0.184931,-3.606165 -0.184931,-4.993151 -0.184931,-4.993151 z"
+       id="path45"
+       sodipodi:nodetypes="ccssc" />
+    <ellipse
+       style="fill:#c50505;fill-opacity:1;stroke:none;stroke-width:0.318346;stroke-opacity:1"
+       id="path47"
+       cx="23.271746"
+       cy="19.501911"
+       rx="1.9422163"
+       ry="1.2331611" />
+  </g>
+</svg>
