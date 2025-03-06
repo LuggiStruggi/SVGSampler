@@ -43,13 +43,12 @@ sample_from_svg(path, total_samples, sample_setting="equal_over_classes", overla
   - `"all"` – Sample from all overlapping shapes.
   - `"upper_only"` – Only sample from the top (upper) shape in overlapping regions.
 - **`normalize`** *(bool)*: If True, normalize the sampled coordinates per axis to [0, 1].
+- **`seed`** *(int)*: Seed for random number generation.
 
 ### Returns
 
 - **`X`** *(ndarray)*: Array of shape (N, 2) with (x, y) coordinates.
 - **`y`** *(ndarray)*: Numeric class labels for each sample point.
-- **`label_dict`** *(dict)*: Mapping from original fill colors to numeric labels.
-
 
 # Dependencies
 
