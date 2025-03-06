@@ -154,12 +154,14 @@ def interior_triangles(polygon, tol=1e-10):
     return interior
 
 
-def triangulation_sampling(polygon, num_samples):
-    """Sample points uniformly from within a polygon using its triangulation.
+def triangulation_sampling(polygon, num_samples, *, rng):
+    """
+    Sample points uniformly from within a polygon using its triangulation.
     
     Parameters:
         polygon (Polygon): The polygon to sample from.
         num_samples (int): The total number of sample points.
+        rng (np.random.Generator): A NumPy random Generator instance.
         
     Returns:
         pts (ndarray): An array of shape (num_samples, 2) with sampled (x, y) points.
@@ -178,10 +180,10 @@ def triangulation_sampling(polygon, num_samples):
     areas = np.array(areas)
     cum_areas = np.cumsum(areas)
     total_area = cum_areas[-1]
-    r = np.random.uniform(0, total_area, num_samples)
+    r = rng.uniform(0, total_area, num_samples)
     indices = np.searchsorted(cum_areas, r)
-    u = np.random.rand(num_samples)
-    v = np.random.rand(num_samples)
+    u = rng.random(num_samples)
+    v = rng.random(num_samples)
     mask = u + v > 1
     u[mask] = 1 - u[mask]
     v[mask] = 1 - v[mask]
@@ -206,17 +208,36 @@ def resolve_overlaps_upper_only(shapes):
     resolved = []
     union_upper = None
     for geometry, fill in reversed(shapes):
+
+        if not geometry.is_valid:
+            geometry = geometry.buffer(0)
+
         if union_upper is not None:
-            geometry = geometry.difference(union_upper)
+            
+            if not union_upper.is_valid:
+                union_upper = union_upper.buffer(0)
+            try:
+                geometry = geometry.difference(union_upper)
+            except Exception as e:
+                # Attempt to clean both geometries and try again
+                geometry = geometry.buffer(0).difference(union_upper.buffer(0))
+
         if not geometry.is_empty:
             resolved.append((geometry, fill))
-            union_upper = geometry if union_upper is None else unary_union([union_upper, geometry])
+            # Update union_upper with the current geometry
+            if union_upper is None:
+                union_upper = geometry
+            else:
+                union_upper = unary_union([union_upper, geometry])
+                if not union_upper.is_valid:
+                    union_upper = union_upper.buffer(0)
+
     resolved.reverse()
     return resolved
 
 
 def sample_from_svg(path, total_samples, sample_setting="equal_over_classes",
-                    overlap_mode="all", normalize=False):
+                    overlap_mode="all", normalize=False, *, seed):
     """
     Sample points from an SVG file's filled shapes.
     
@@ -231,11 +252,13 @@ def sample_from_svg(path, total_samples, sample_setting="equal_over_classes",
          - "all": Sample from all classes even if they overlap.
          - "upper_only": In overlapping regions, only sample from the layerwise upper (top) shape.
       normalize (bool): If True, normalize the X coordinates per axis to [0, 1].
+      seed (int): Seed for random number generation.
     
     Returns:
       X (ndarray): Sampled points of shape (N, 2).
       y (ndarray): Numeric class labels corresponding to each point.
     """
+    rng = np.random.default_rng(seed)
     s = get_shapes_from_svg(path)
     if overlap_mode == "upper_only":
         s = resolve_overlaps_upper_only(s)
@@ -249,7 +272,7 @@ def sample_from_svg(path, total_samples, sample_setting="equal_over_classes",
         X_list, y_list = [], []
         label_dict = {color: i for i, color in enumerate(union_groups.keys())}
         for color, union in union_groups.items():
-            pts = triangulation_sampling(union, samples_per_class)
+            pts = triangulation_sampling(union, samples_per_class, rng=rng)
             X_list.append(pts)
             y_list.append(np.full(pts.shape[0], label_dict[color]))
         X, y = np.concatenate(X_list, axis=0), np.concatenate(y_list, axis=0)
@@ -262,7 +285,7 @@ def sample_from_svg(path, total_samples, sample_setting="equal_over_classes",
             if color not in label_dict:
                 label_dict[color] = len(label_dict)
         for shape, color in s:
-            pts = triangulation_sampling(shape, samples_per_shape)
+            pts = triangulation_sampling(shape, samples_per_shape, rng=rng)
             X_list.append(pts)
             y_list.append(np.full(pts.shape[0], label_dict[color]))
         X, y = np.concatenate(X_list, axis=0), np.concatenate(y_list, axis=0)
@@ -273,7 +296,7 @@ def sample_from_svg(path, total_samples, sample_setting="equal_over_classes",
         label_dict = {color: i for i, color in enumerate(union_groups.keys())}
         for color, union in union_groups.items():
             n_samples = int(round(total_samples * union.area / total_area))
-            pts = triangulation_sampling(union, n_samples)
+            pts = triangulation_sampling(union, n_samples, rng=rng)
             X_list.append(pts)
             y_list.append(np.full(pts.shape[0], label_dict[color]))
         X, y = np.concatenate(X_list, axis=0), np.concatenate(y_list, axis=0)
@@ -292,4 +315,8 @@ def sample_from_svg(path, total_samples, sample_setting="equal_over_classes",
 
 
 if __name__ == '__main__':
-    pass
+    # Example usage:
+    # Provide a seed to ensure reproducibility.
+    X, y = sample_from_svg("your_svg_file.svg", total_samples=1000, seed=42)
+    plt.scatter(X[:, 0], X[:, 1], c=y, cmap="viridis")
+    plt.show()
