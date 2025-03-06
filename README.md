@@ -28,7 +28,7 @@ plt.show()
 ## `sample_from_svg`
 
 ```python
-sample_from_svg(path, total_samples, sample_setting="equal_over_classes", overlap_mode="all", normalize=False)
+sample_from_svg(path, total_samples, sample_setting="equal_over_classes", overlap_mode="all", normalize=False, *, seed)
 ```
 
 ### Parameters
