@@ -9,20 +9,27 @@ pip install svg_sampler
 
 Then you can use the function `sample_from_svg` to sample datapoints from the filled in paths/objects of the svg.
 
-# Example:
-
-![image](examples/test.svg)
+# Examples:
 
 ```python
 from svg_sampler import sample_from_svg
 from matplotlib import pyplot as plt
 
-X, y = sample_from_svg("test.svg", 5000, normalize=True,
+X, y = sample_from_svg(path_to_file, 5000, normalize=True,
                        sample_setting="based_on_area", overlap_mode="upper_only")
 plt.scatter(X[:, 0], X[:, 1], c=y)
 plt.show()
 ```
-![image](examples/sampled.svg)
+
+<div style="display: flex;">
+  <img src="examples/test.svg" alt="SVG" style="width: 30%;"/>
+  <img src="examples/sampled.svg" alt="Sampled Datapoints" style="width: 40%;"/>
+</div>
+
+<div style="display: flex;">
+  <img src="examples/yin_yang.svg" alt="SVG" style="width: 30%;"/>
+  <img src="examples/sampled2.svg" alt="Sampled Datapoints" style="width: 40%;"/>
+</div>
 
 # Documentation
 
