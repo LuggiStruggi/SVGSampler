@@ -88,6 +88,7 @@ def parse_style(style_str):
             styles[key.strip()] = value.strip()
     return styles
 
+# --- Geometry Creation Functions ---
 def create_rect(elem):
     x = parse_float(elem.get("x", "0"))
     y = parse_float(elem.get("y", "0"))
@@ -139,32 +140,18 @@ def create_polyline(elem):
         return None
 
 def create_line(elem):
-    x1 = parse_float(elem.get("x1"))
-    y1 = parse_float(elem.get("y1"))
-    x2 = parse_float(elem.get("x2"))
-    y2 = parse_float(elem.get("y2"))
-    stroke_width = parse_float(elem.get("stroke-width", "0"))
-    if stroke_width > 0:
-        line = LineString([(x1, y1), (x2, y2)])
-        return line.buffer(stroke_width / 2)
-    else:
-        return None
+    return None
 
 def create_path(elem, num_points=100):
     """
     Create a Polygon from an SVG path element.
-    If the path is not perfectly closed but the endpoints are within tolerance,
-    force closure.
-    Returns None if the path is clearly open.
+    For filled shapes, force closure by sampling points and connecting the last point to the first.
     """
     d = elem.get("d")
     path = parse_path(d)
+    tol = 1e-6
     if not path.iscontinuous():
         return None
-    tol = 1e-2
-    if not path.isclosed():
-        if abs(path.start - path.end) > tol:
-            return None
     t_values = np.linspace(0, 1, num_points + 1)
     points = [complex(path.point(t)) for t in t_values]
     if abs(points[0] - points[-1]) > tol:
@@ -172,15 +159,17 @@ def create_path(elem, num_points=100):
     pts = [(pt.real, pt.imag) for pt in points]
     return Polygon(pts)
 
-def extract_geometry(elem, current_transform=IDENTITY):
+def extract_geometry(elem, current_transform=IDENTITY, inherited_fill=None):
     tag = elem.tag.split('}')[-1]
-    fill = None
     style = elem.get("style")
+    fill = None
     if style:
         style_dict = parse_style(style)
         fill = style_dict.get("fill")
     if fill is None:
         fill = elem.get("fill")
+    if fill is None:
+        fill = inherited_fill
     if fill is None or fill.lower() == "none":
         return None, None
 
@@ -205,14 +194,13 @@ def extract_geometry(elem, current_transform=IDENTITY):
 
 def collect_defs(root):
     defs_dict = {}
-    for defs in root.findall(".//{http://www.w3.org/2000/svg}defs"):
-        for elem in defs.iter():
-            elem_id = elem.get("id")
-            if elem_id:
-                defs_dict[elem_id] = elem
+    for elem in root.iter():
+        elem_id = elem.get("id")
+        if elem_id:
+            defs_dict[elem_id] = elem
     return defs_dict
 
-def process_use(elem, parent_transform, defs_dict):
+def process_use(elem, parent_transform, defs_dict, inherited_fill=None):
     href = elem.get("href") or elem.get("{http://www.w3.org/1999/xlink}href")
     if not href:
         return []
@@ -231,22 +219,30 @@ def process_use(elem, parent_transform, defs_dict):
         new_elem.set("style", elem.get("style"))
     if elem.get("fill"):
         new_elem.set("fill", elem.get("fill"))
-    return traverse_svg(new_elem, total_transform, defs_dict)
+    return traverse_svg(new_elem, total_transform, defs_dict, inherited_fill=inherited_fill)
 
-def traverse_svg(elem, parent_transform=IDENTITY, defs_dict=None):
+def traverse_svg(elem, parent_transform=IDENTITY, defs_dict=None, inherited_fill=None):
     if defs_dict is None:
         defs_dict = {}
     shapes = []
     tag = elem.tag.split('}')[-1]
+    elem_fill = None
+    if 'fill' in elem.attrib:
+        elem_fill = elem.attrib['fill']
+    elif elem.get("style"):
+        style = parse_style(elem.get("style"))
+        elem_fill = style.get("fill")
+    current_inherited_fill = elem_fill if elem_fill is not None else inherited_fill
+
     if tag == "use":
-        return process_use(elem, parent_transform, defs_dict)
+        return process_use(elem, parent_transform, defs_dict, inherited_fill=current_inherited_fill)
     local_transform = parse_transform(elem.get("transform"))
     current_transform = compose_transforms(parent_transform, local_transform)
-    geometry, fill = extract_geometry(elem, current_transform)
+    geometry, color = extract_geometry(elem, current_transform, inherited_fill=current_inherited_fill)
     if geometry is not None:
-        shapes.append((geometry, fill))
+        shapes.append((geometry, color))
     for child in elem:
-        shapes.extend(traverse_svg(child, current_transform, defs_dict))
+        shapes.extend(traverse_svg(child, current_transform, defs_dict, inherited_fill=current_inherited_fill))
     return shapes
 
 def get_shapes_from_svg(path):
@@ -256,7 +252,6 @@ def get_shapes_from_svg(path):
     shapes = traverse_svg(root, IDENTITY, defs_dict)
     return shapes
 
-# --- Triangulation and Sampling ---
 def interior_triangles(polygon, tol=1e-10):
     all_triangles = triangulate(polygon)
     interior = []
@@ -302,7 +297,7 @@ def triangulation_sampling(polygon, num_samples, *, rng):
 def resolve_overlaps_upper_only(shapes):
     resolved = []
     union_upper = None
-    for geometry, fill in reversed(shapes):
+    for geometry, color in reversed(shapes):
         if not geometry.is_valid:
             geometry = geometry.buffer(0)
         if union_upper is not None:
@@ -311,7 +306,7 @@ def resolve_overlaps_upper_only(shapes):
             except Exception:
                 geometry = geometry.buffer(0).difference(union_upper.buffer(0))
         if not geometry.is_empty:
-            resolved.append((geometry, fill))
+            resolved.append((geometry, color))
             if union_upper is None:
                 union_upper = geometry
             else:
@@ -379,17 +374,4 @@ def sample_from_svg(path, total_samples, sample_setting="equal_over_classes",
     return X, y
 
 if __name__ == "__main__":
-    svg_path = "america.svg"  # Replace with the path to your SVG file
-    total_samples = 10000
-    seed = 42
-    try:
-        X, y = sample_from_svg(svg_path, total_samples, sample_setting="based_on_area",
-                               overlap_mode="upper_only", normalize=False, seed=seed)
-        plt.scatter(X[:, 0], X[:, 1], c=y, cmap='viridis', s=5)
-        plt.title("Sampled Points from SVG")
-        plt.xlabel("X")
-        plt.ylabel("Y")
-        plt.gca().set_aspect('equal', adjustable='box')
-        plt.show()
-    except Exception as e:
-        print("Error sampling from SVG:", e)
+    pass
