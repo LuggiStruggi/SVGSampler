@@ -31,6 +31,11 @@ plt.show()
   <img src="examples/sampled2.svg" alt="Sampled Datapoints" style="width: 40%;"/>
 </div>
 
+<div style="display: flex;">
+  <img src="examples/github.svg" alt="SVG" style="width: 30%;"/>
+  <img src="examples/sampled3.svg" alt="Sampled Datapoints" style="width: 40%;"/>
+</div>
+
 # Documentation
 
 ## `sample_from_svg`
