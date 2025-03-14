@@ -1,13 +1,11 @@
 import re
-import sys
 import math
 import xml.etree.ElementTree as ET
-from shapely.geometry import Point, Polygon, LineString
+from shapely.geometry import Polygon
 from shapely.ops import triangulate, unary_union
 from shapely import affinity  # for applying affine transforms
 from svgpathtools import parse_path
 import numpy as np
-import matplotlib.pyplot as plt
 
 IDENTITY = (1, 0, 0, 1, 0, 0)
 
@@ -40,8 +38,8 @@ def parse_transform(transform_str):
     for cmd, params in pattern.findall(transform_str):
         params = list(map(parse_float, re.split(r'[ ,]+', params.strip())))
         if cmd == "matrix" and len(params) == 6:
-            T = np.array([[params[0], params[1], params[4]],
-                          [params[2], params[3], params[5]],
+            T = np.array([[params[0], params[2], params[4]],
+                          [params[1], params[3], params[5]],
                           [0, 0, 1]])
         elif cmd == "translate":
             tx = params[0]
